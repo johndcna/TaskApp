@@ -1,0 +1,66 @@
+﻿@page "/tasks/create"
+@using Blazor.Services
+@using TaskApp.Shared.Enums
+@using TaskApp.Shared.Models.Task
+@inject TaskApiService TaskService
+@inject NavigationManager NavManager
+
+<h3>Create Task</h3>
+
+<EditForm Model="task" OnValidSubmit="HandleValidSubmit" class="needs-validation" novalidate>
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" />
+
+    <div class="mb-3">
+        <label class="form-label">Title</label>
+        <InputText @bind-Value="task.Title" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <InputTextArea @bind-Value="task.Description" class="form-control" rows="3" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Status</label>
+        <InputSelect @bind-Value="task.Status" class="form-select">
+            @foreach (var s in Enum.GetValues<Status>())
+            {
+                <option value="@s">@s</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Priority</label>
+        <InputSelect @bind-Value="task.Priority" class="form-select">
+            @foreach (var p in Enum.GetValues<Priority>())
+            {
+                <option value="@p">@p</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Due Date</label>
+        <InputDate @bind-Value="task.DueDate" class="form-control" />
+    </div>
+
+    <button type="submit" class="btn btn-primary me-2">Create</button>
+    <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+</EditForm>
+
+@code {
+    private CreateTaskDto task = new() { CreatedDate = DateTime.UtcNow, Status = Status.Todo, Priority = Priority.Medium };
+
+    private async Task HandleValidSubmit()
+    {
+        await TaskService.CreateTaskAsync(task);
+        NavManager.NavigateTo("/tasks");
+    }
+
+    private void Cancel()
+    {
+        NavManager.NavigateTo("/tasks");
+    }
+}

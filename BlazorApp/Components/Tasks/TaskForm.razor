@@ -1,0 +1,43 @@
+﻿@page "/testform"
+@using System.ComponentModel.DataAnnotations
+
+<EditForm Model="@taskModel" OnValidSubmit="HandleValidSubmit" OnInvalidSubmit="HandleInvalidSubmit" FormName="=te">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div>
+        <label>Title</label>
+        <InputText @bind-Value="taskModel.Title" />
+        <ValidationMessage For="@(() => taskModel.Title)" />
+    </div>
+
+    <button type="submit">Submit</button>
+
+</EditForm>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <p>@message</p>
+}
+
+@code {
+    private CreateTaskDto taskModel = new();
+
+    private string message = string.Empty;
+
+    private void HandleValidSubmit()
+    {
+        message = $"Form submitted successfully! Title: {taskModel.Title}";
+    }
+
+    private void HandleInvalidSubmit()
+    {
+        message = "Validation failed. Please check your input.";
+    }
+
+    public class CreateTaskDto
+    {
+        [Required]
+        public string Title { get; set; } = string.Empty;
+    }
+}

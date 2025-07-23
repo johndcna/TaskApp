@@ -1,0 +1,46 @@
+﻿@page "/tasks/delete/{id:guid}"
+@using Blazor.Services
+@using TaskApp.Shared.Models.Task
+@inject TaskApiService TaskService
+@inject NavigationManager NavManager
+
+<h3>Delete Task</h3>
+
+@if (task == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="alert alert-warning" role="alert">
+        Are you sure you want to delete the task titled <strong>@task.Title</strong>?
+    </div>
+
+    <button class="btn btn-danger me-2" @onclick="DeleteConfirmed">Yes, Delete</button>
+    <button class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+}
+
+@code {
+    [Parameter]
+    public Guid id { get; set; }
+
+    private TaskDto? task;
+
+    protected override async Task OnInitializedAsync()
+    {
+        task = await TaskService.GetTaskAsync(id);
+
+        if (task == null)
+        {
+            NavManager.NavigateTo("/tasks");
+        }
+    }
+
+    private async Task DeleteConfirmed()
+    {
+        await TaskService.DeleteTaskAsync(id);
+        NavManager.NavigateTo("/tasks");
+    }
+
+    private void Cancel() => NavManager.NavigateTo("/tasks");
+}

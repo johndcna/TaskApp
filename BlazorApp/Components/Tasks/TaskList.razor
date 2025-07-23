@@ -1,0 +1,162 @@
+﻿@using TaskAppAPI.Models.Task
+@inject BlazorApp.Services.TaskService TaskService
+
+<h3>Task List</h3>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <label>Status Filter</label>
+        <select class="form-select"  onchange="OnStatusFilterChanged">
+            <option value="">All</option>
+            @foreach (var status in statuses)
+            {
+                <option value="@status">@status</option>
+            }
+        </select>
+
+    </div>
+    <div class="col-md-3">
+        <label>Priority Filter</label>
+        <select class="form-select" @bind="priorityFilter">
+            <option value="">All</option>
+            @foreach (var priority in priorities)
+            {
+                <option value="@priority">@priority</option>
+            }
+        </select>
+    </div>
+</div>
+
+<table class="table table-striped table-responsive">
+    <thead>
+        <tr>
+            <th @onclick="() => SortByColumn(nameof(TaskDto.Title))" style="cursor:pointer">
+                Title @RenderSortIcon(nameof(TaskDto.Title))
+            </th>
+            <th @onclick="() => SortByColumn(nameof(TaskDto.DueDate))" style="cursor:pointer">
+                Due Date @RenderSortIcon(nameof(TaskDto.DueDate))
+            </th>
+            <th @onclick="() => SortByColumn(nameof(TaskDto.Status))" style="cursor:pointer">
+                Status @RenderSortIcon(nameof(TaskDto.Status))
+            </th>
+            <th @onclick="() => SortByColumn(nameof(TaskDto.Priority))" style="cursor:pointer">
+                Priority @RenderSortIcon(nameof(TaskDto.Priority))
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (filteredTasks == null)
+        {
+            <tr><td colspan="4">Loading tasks...</td></tr>
+        }
+        else if (!filteredTasks.Any())
+        {
+            <tr><td colspan="4">No tasks found.</td></tr>
+        }
+        else
+        {
+            @foreach (var task in filteredTasks)
+            {
+                <tr>
+                    <td>@task.Title</td>
+                    <td>@task.DueDate?.ToShortDateString()</td>
+                    <td>@task.Status</td>
+                    <td>@task.Priority</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<TaskDto> tasks;
+    private List<TaskDto> filteredTasks;
+
+    private string statusFilter = "";
+    private string priorityFilter = "";
+
+    private string sortColumn = nameof(TaskDto.DueDate);
+    private bool sortAscending = true;
+
+    private readonly string[] statuses = { "Open", "In Progress", "Closed" };
+    private readonly string[] priorities = { "High", "Medium", "Low" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        var response = await TaskService.GetTasksAsync();
+        if (response != null)
+        {
+            tasks = response;
+            ApplyFilterAndSort();
+        }
+        else
+        {
+            tasks = new List<TaskDto>();
+        }
+    }
+
+    private void ApplyFilterAndSort()
+    {
+        IEnumerable<TaskDto> query = tasks;
+
+        if (!string.IsNullOrWhiteSpace(statusFilter))
+        {
+            query = query.Where(t => t.StatusDisplay == statusFilter);
+        }
+
+        if (!string.IsNullOrWhiteSpace(priorityFilter))
+        {
+            query = query.Where(t => t.PriorityDisplay == priorityFilter);
+        }
+
+        query = sortColumn switch
+        {
+            nameof(TaskDto.Title) => sortAscending ? query.OrderBy(t => t.Title) : query.OrderByDescending(t => t.Title),
+            nameof(TaskDto.DueDate) => sortAscending ? query.OrderBy(t => t.DueDate) : query.OrderByDescending(t => t.DueDate),
+            nameof(TaskDto.StatusDisplay) => sortAscending ? query.OrderBy(t => t.StatusDisplay) : query.OrderByDescending(t => t.StatusDisplay),
+            nameof(TaskDto.Priority) => sortAscending ? query.OrderBy(t => t.Priority) : query.OrderByDescending(t => t.Priority),
+            _ => query
+        };
+
+        filteredTasks = query.ToList();
+    }
+
+    private void SortByColumn(string columnName)
+    {
+        if (sortColumn == columnName)
+        {
+            // Toggle sort direction
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            sortColumn = columnName;
+            sortAscending = true;
+        }
+
+        ApplyFilterAndSort();
+    }
+
+    private RenderFragment RenderSortIcon(string columnName) => builder =>
+    {
+        if (sortColumn == columnName)
+        {
+            var iconClass = sortAscending ? "bi bi-arrow-up" : "bi bi-arrow-down";
+            builder.OpenElement(0, "i");
+            builder.AddAttribute(1, "class", iconClass);
+            builder.CloseElement();
+        }
+    };
+
+    private void OnStatusFilterChanged(ChangeEventArgs e)
+    {
+        statusFilter = e.Value?.ToString();
+        ApplyFilterAndSort();
+    }
+
+    private void OnPriorityFilterChanged(ChangeEventArgs e)
+    {
+        priorityFilter = e.Value?.ToString();
+        ApplyFilterAndSort();
+    }
+}

@@ -1,0 +1,100 @@
+﻿@page "/tasks/edit/{id:guid}"
+@using Blazor.Services
+@using TaskApp.Shared.Enums
+@using TaskApp.Shared.Models.Task
+@inject TaskApiService TaskService
+@inject NavigationManager NavManager
+
+<h3>Edit Task</h3>
+
+@if (updateTask == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <EditForm Model="updateTask" OnValidSubmit="HandleValidSubmit" class="needs-validation">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
+
+        <div class="mb-3">
+            <label class="form-label">Title</label>
+            <InputText @bind-Value="updateTask.Title" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <InputTextArea @bind-Value="updateTask.Description" class="form-control" rows="3" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Status</label>
+            <InputSelect @bind-Value="updateTask.Status" class="form-select">
+                @foreach (var s in Enum.GetValues<Status>())
+                {
+                    <option value="@s">@s</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Priority</label>
+            <InputSelect @bind-Value="updateTask.Priority" class="form-select">
+                @foreach (var p in Enum.GetValues<Priority>())
+                {
+                    <option value="@p">@p</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Due Date</label>
+            <InputDate @bind-Value="updateTask.DueDate" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-primary me-2">Save</button>
+        <button type="button" class="btn btn-secondary" @onclick="Cancel">Cancel</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter]
+    public Guid id { get; set; }
+
+    private UpdateTaskDto updateTask = new();
+    private TaskDto? task;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        task = await TaskService.GetTaskAsync(id);
+
+        if (task == null)
+        {
+            NavManager.NavigateTo("/tasks");
+        }
+        else
+        {
+            updateTask = new UpdateTaskDto
+                {
+                    Id = task.Id,
+                    Title = task.Title,
+                    Description = task.Description,
+                    Status = task.Status,
+                    Priority = task.Priority,
+                    DueDate = task.DueDate
+                };
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (updateTask != null)
+        {
+            await TaskService.UpdateTaskAsync(updateTask);
+        }
+        NavManager.NavigateTo("/tasks");
+    }
+
+    private void Cancel() => NavManager.NavigateTo("/tasks");
+}
